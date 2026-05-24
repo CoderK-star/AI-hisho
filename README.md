@@ -18,6 +18,8 @@
 - RAG: `pip install -e ".[rag]"` — [qdrant-client](https://github.com/qdrant/qdrant-client) + fastembed
 - カレンダー連携: `pip install -e ".[calendar]"` — Google Calendar API
 
+仮想環境の使用を推奨します（例: `python -m venv .venv`）。
+.\venv\Scripts\activate  # Windows
 ---
 
 ## セットアップ

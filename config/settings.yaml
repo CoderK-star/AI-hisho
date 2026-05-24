@@ -27,7 +27,7 @@ logging:
   operations_file: data/logs/operations.jsonl
 
 rag:
-  enabled: false              # pip install -e '.[rag]' してから true に
+  enabled: true              # pip install -e '.[rag]' してから true に
   mode: local                 # local | server
   local_path: data/rag
   server_url: ${QDRANT_URL:-http://localhost:6333}

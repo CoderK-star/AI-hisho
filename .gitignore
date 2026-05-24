@@ -5,13 +5,16 @@ __pycache__/
 data/db/*.db
 data/logs/*.jsonl
 .venv/
+venv/
 dist/
 *.egg-info/
 .ruff_cache/
 .pytest_cache/
 .coverage
 
-UI-requirements/
 
+gui_requirements.md
 CLAUDE.md
 project_plan_draft.md
+
+Personal Assistant Workflow System-handoff/
