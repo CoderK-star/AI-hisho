@@ -17,7 +17,7 @@ async def add_memo(
     session.add(memo)
     await session.commit()
     await session.refresh(memo)
-    return {"id": memo.id, "title": memo.title, "content": memo.content[:200]}
+    return {"id": memo.id, "title": memo.title, "content": memo.content}
 
 
 async def list_memos(

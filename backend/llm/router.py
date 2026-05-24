@@ -27,6 +27,8 @@ _ROUTE_TABLE: dict[IntentType, RouteTarget] = {
     IntentType.SCHEDULE_CHECK: RouteTarget.RULE_BASED,
     IntentType.BRIEFING: RouteTarget.LOCAL,
     IntentType.MEMORY_PIN: RouteTarget.LOCAL,
+    IntentType.KNOWLEDGE_SEARCH: RouteTarget.LOCAL,
+    IntentType.SCHEDULE_CHECK_CALENDAR: RouteTarget.RULE_BASED,
     IntentType.HELP: RouteTarget.RULE_BASED,
 }
 

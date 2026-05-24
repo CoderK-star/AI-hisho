@@ -15,7 +15,10 @@ async def create_memo(
     body: MemoCreate,
     session: AsyncSession = Depends(get_session),
 ) -> dict:
-    return await add_memo(session, content=body.content, title=body.title)
+    result = await add_memo(session, content=body.content, title=body.title)
+    from backend.rag.indexer import index_memo
+    await index_memo(result)
+    return result
 
 
 @router.get("")

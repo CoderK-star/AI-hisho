@@ -14,13 +14,23 @@
 - Python 3.10+
 - [Ollama](https://ollama.com/) (ローカルLLM使用時)
 
+オプション機能:
+- RAG: `pip install -e ".[rag]"` — [qdrant-client](https://github.com/qdrant/qdrant-client) + fastembed
+- カレンダー連携: `pip install -e ".[calendar]"` — Google Calendar API
+
 ---
 
 ## セットアップ
 
 ```bash
-# 依存インストール
+# 依存インストール（基本）
 pip install -e ".[dev]"
+
+# RAG を使う場合
+pip install -e ".[dev,rag]"
+
+# Google Calendar 連携を使う場合
+pip install -e ".[dev,calendar]"
 
 # 環境変数の設定
 cp .env.example .env
@@ -69,6 +79,8 @@ POST /api/chat
 | 「タスクを追加して」 | `task_add` | ローカルLLM |
 | 「タスクの一覧を見せて」 | `task_list` | ルールベース |
 | 「ブリーフィング」 | `briefing` | ローカルLLM |
+| 「今日の予定をカレンダーで確認して」 | `schedule_check_calendar` | ローカルLLM |
+| 「メモを検索して」 | `knowledge_search` | ローカルLLM + RAG |
 | 「こんにちは」 | `chat` | ローカルLLM |
 
 ### タスク
@@ -109,10 +121,52 @@ GET   /api/reminders?include_fired=false   # リマインダー一覧
 ### メモ
 
 ```
-POST  /api/memos        # メモ作成
+POST  /api/memos        # メモ作成（RAG有効時は自動インデックス）
 GET   /api/memos        # メモ一覧
 GET   /api/memos/{id}   # メモ詳細
 ```
+
+### ナレッジ検索 (RAG)
+
+RAG が有効な場合のみ利用可能（`config/settings.yaml` の `rag.enabled: true`）。
+
+```
+GET /api/search?q=プロジェクトX&limit=5
+→ {
+  "query": "プロジェクトX",
+  "count": 2,
+  "results": [
+    {"score": 0.92, "type": "memo", "doc_id": "...", "text": "..."},
+    ...
+  ]
+}
+```
+
+チャットで「メモを検索して」と入力すると、RAG 検索結果をコンテキストとして LLM が回答を生成します。
+
+### カレンダー (Google Calendar)
+
+カレンダー連携が有効な場合のみ利用可能（`config/settings.yaml` の `calendar.enabled: true`）。
+
+```
+GET /api/calendar/events?days=7   # 今後 N 日分のイベント取得
+GET /api/calendar/health          # 認証状態の確認
+```
+
+**初回認証手順:**
+1. Google Cloud Console で OAuth2 クライアント ID を作成
+2. `credentials.json` を `data/calendar_credentials.json` に配置
+3. サーバー起動後、`/api/calendar/health` にアクセスしてブラウザ認証を完了
+
+### 操作ログ GUI
+
+```
+GET /api/logs               # 操作ログ一覧 (JSON)
+GET /api/logs?intent=chat   # Intent でフィルタ
+GET /api/logs/view          # ブラウザ GUI ビューア
+```
+
+ブラウザで `http://localhost:8000/api/logs/view` を開くと、Intent・Route・サマリをフィルタ・ページングできるログビューアが表示されます。
 
 ---
 
@@ -135,6 +189,19 @@ scheduler:
     morning: "08:00"
     evening: "21:00"
     timezone: "Asia/Tokyo"
+
+rag:
+  enabled: false                 # pip install -e '.[rag]' 後に true へ
+  mode: local                    # local | server
+  local_path: data/rag
+  collection: personal_assistant
+  embedding_model: intfloat/multilingual-e5-small
+  top_k: 5
+
+calendar:
+  enabled: false                 # pip install -e '.[calendar]' 後に true へ
+  credentials_path: data/calendar_credentials.json
+  token_path: data/calendar_token.json
 ```
 
 `local_fallback`:
@@ -160,6 +227,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3
 NOTIFICATION_METHOD=terminal
 DATABASE_URL=sqlite+aiosqlite:///./data/db/assistant.db
+QDRANT_URL=http://localhost:6333   # RAG サーバーモード使用時のみ
 ```
 
 ---
@@ -175,7 +243,10 @@ DATABASE_URL=sqlite+aiosqlite:///./data/db/assistant.db
     ↓
 [3] Memory Engine (会話履歴参照)
     ↓
-[4] Workflow Engine (内部ツール実行)
+[4] Workflow Engine (内部ツール / 外部アダプタ実行)
+    ├─→ internal/   DB直結・ネットワーク不要 (tasks, reminders, memos)
+    ├─→ rag/        ベクトル検索 (qdrant-client + fastembed)
+    └─→ adapters/   外部API (Google Calendar など)
     ↓
 [5] LLM Router (ルールベース振り分け)
     ├─→ ローカルLLM (Ollama)     軽量処理・プライバシー優先
@@ -210,11 +281,14 @@ pytest tests/integration/ -v
 pytest --cov=backend tests/
 ```
 
+RAG テスト (`tests/unit/test_rag_engine.py`) は `qdrant-client[fastembed]` がインストールされていない場合は自動スキップされます。
+
 ---
 
 ## 操作ログ
 
-すべての操作は `data/logs/operations.jsonl` に追記されます（削除・上書き不可）。
+すべての操作は `data/logs/operations.jsonl` に追記されます（削除・上書き不可）。  
+`http://localhost:8000/api/logs/view` でブラウザから確認できます。
 
 ```jsonc
 {
@@ -238,7 +312,7 @@ pytest --cov=backend tests/
 | フェーズ | 内容 | 状態 |
 |---|---|---|
 | Phase 1 | チャット / タスク / リマインダー / メモ / ブリーフィング | ✅ 完了 |
-| Phase 2 | RAG / カレンダー連携 / 操作ログ GUI | 未着手 |
-| Phase 3 | メール要約 / 外部アダプタ拡充 | 未着手 |
-| Phase 4 | 音声常駐 / ウェイクワード | 未着手 |
-| Phase 5 | スマートホーム連携 / OSS 化準備 | 未着手 |
+| Phase 2 | RAG / Google Calendar 連携 / 操作ログ GUI | ✅ 完了 |
+| Phase 3 | メール要約 / 外部アダプタ拡充 / Memory 重要度判定の改良 | 未着手 |
+| Phase 4 | 音声常駐 / ウェイクワード / 通知音声割り込み (オプション) | 未着手 |
+| Phase 5 | スマートホーム連携 / GUI 整備 / OSS 化準備 | 未着手 |

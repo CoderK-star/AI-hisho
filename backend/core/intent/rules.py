@@ -17,6 +17,8 @@ class IntentType(str, Enum):
     SCHEDULE_CHECK = "schedule_check"
     BRIEFING = "briefing"
     MEMORY_PIN = "memory_pin"
+    KNOWLEDGE_SEARCH = "knowledge_search"
+    SCHEDULE_CHECK_CALENDAR = "schedule_check_calendar"
     HELP = "help"
 
 
@@ -92,6 +94,21 @@ _RULES: list[IntentRule] = [
         [re.compile(r"覚えておいて", re.IGNORECASE),
          re.compile(r"(remember|pin)\s+this", re.IGNORECASE)],
         priority=5,
+    ),
+    IntentRule(
+        IntentType.KNOWLEDGE_SEARCH,
+        [re.compile(r"(メモ|記録|ノート).*(検索|探|見つけ|調べ)", re.IGNORECASE),
+         re.compile(r"(検索|探|調べ).*(メモ|記録|ノート)", re.IGNORECASE),
+         re.compile(r"〜?について.*(メモ|記録|書い).*?(あ|教え|見せ)", re.IGNORECASE),
+         re.compile(r"(search|find|look\s*up).*(note|memo|record)", re.IGNORECASE)],
+        priority=12,
+    ),
+    IntentRule(
+        IntentType.SCHEDULE_CHECK_CALENDAR,
+        [re.compile(r"(カレンダー|calendar).*(確認|教え|見せ|今日|明日|今週)", re.IGNORECASE),
+         re.compile(r"(今日|明日|今週|来週)の(予定|スケジュール|イベント)", re.IGNORECASE),
+         re.compile(r"(予定|スケジュール).*(カレンダー|google)", re.IGNORECASE)],
+        priority=12,
     ),
     IntentRule(
         IntentType.HELP,

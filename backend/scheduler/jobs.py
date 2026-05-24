@@ -55,9 +55,24 @@ async def _briefing() -> None:
         await send_notification("\n".join(lines), method=method)
 
 
+async def _reindex_rag() -> None:
+    from backend.rag.engine import RAGEngine
+    from backend.rag.indexer import index_all
+
+    if RAGEngine.get_instance() is None:
+        return
+    async with async_session() as session:
+        count = await index_all(session)
+    logger.info("RAG: 再インデックス完了 (%d件)", count)
+
+
 def check_reminders() -> None:
     _run_async(_check_reminders())
 
 
 def run_briefing() -> None:
     _run_async(_briefing())
+
+
+def reindex_rag() -> None:
+    _run_async(_reindex_rag())

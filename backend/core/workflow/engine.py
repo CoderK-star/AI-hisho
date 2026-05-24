@@ -97,4 +97,31 @@ async def execute(
             success=True, data=result, tools_called=["internal.memos.list"]
         )
 
+    if intent == IntentType.KNOWLEDGE_SEARCH:
+        from backend.rag.retriever import retrieve
+        results = await retrieve(user_input)
+        return WorkflowResult(
+            success=True,
+            data={"query": user_input, "results": results},
+            tools_called=["rag.search"],
+            needs_llm=True,
+        )
+
+    if intent == IntentType.SCHEDULE_CHECK_CALENDAR:
+        from backend.core.workflow.adapters.calendar import get_calendar_adapter
+        adapter = get_calendar_adapter()
+        if adapter is None:
+            return WorkflowResult(
+                success=False,
+                error="カレンダー連携が設定されていません。config/settings.yaml で calendar.enabled: true にしてください。",
+                needs_llm=False,
+            )
+        events = await adapter.get_upcoming_events(days=7)
+        return WorkflowResult(
+            success=True,
+            data={"events": events},
+            tools_called=["adapters.calendar.get_events"],
+            needs_llm=True,
+        )
+
     return WorkflowResult(success=True, needs_llm=True)

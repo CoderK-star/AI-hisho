@@ -32,6 +32,8 @@ _INTENT_LOADERS: dict[IntentType, list[str]] = {
     IntentType.SCHEDULE_CHECK: ["time", "tasks", "reminders"],
     IntentType.BRIEFING: ["time", "tasks", "reminders", "memos"],
     IntentType.MEMORY_PIN: ["time"],
+    IntentType.KNOWLEDGE_SEARCH: ["time", "conversations"],
+    IntentType.SCHEDULE_CHECK_CALENDAR: ["time"],
     IntentType.HELP: ["time"],
 }
 
