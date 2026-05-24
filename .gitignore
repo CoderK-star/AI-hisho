@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.env
+.env.local
+data/db/*.db
+data/logs/*.jsonl
+.venv/
+dist/
+*.egg-info/
+.ruff_cache/
+.pytest_cache/
+.coverage
+
+UI-requirements/
+
+CLAUDE.md
+project_plan_draft.md

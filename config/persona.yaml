@@ -1,0 +1,11 @@
+style:
+  tone: polite
+  first_person: "私"
+  suffix: "です・ます"
+  greeting: "おはようございます"
+  farewell: "お疲れ様です"
+
+formatting:
+  use_emoji: false
+  max_response_lines: 20
+  bullet_style: "-"

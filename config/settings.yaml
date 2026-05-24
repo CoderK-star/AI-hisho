@@ -1,0 +1,27 @@
+llm:
+  default_provider: ollama
+  local_fallback: notify       # cloud | fail | notify
+  allow_cloud_escalation: false
+
+  providers:
+    ollama:
+      base_url: ${OLLAMA_BASE_URL:-http://localhost:11434}
+      model: ${OLLAMA_MODEL:-llama3}
+      timeout: 30
+
+    openai:
+      model: gpt-4o-mini
+      timeout: 60
+
+notification:
+  method: terminal   # terminal | os | webhook
+
+scheduler:
+  briefing:
+    enabled: true
+    morning: "08:00"
+    evening: "21:00"
+    timezone: "Asia/Tokyo"
+
+logging:
+  operations_file: data/logs/operations.jsonl
