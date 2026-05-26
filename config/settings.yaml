@@ -32,10 +32,44 @@ rag:
   local_path: data/rag
   server_url: ${QDRANT_URL:-http://localhost:6333}
   collection: personal_assistant
-  embedding_model: intfloat/multilingual-e5-small
+  embedding_model: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
   top_k: 5
 
 calendar:
   enabled: false              # pip install -e '.[calendar]' してから true に
   credentials_path: data/calendar_credentials.json
   token_path: data/calendar_token.json
+
+memory:
+  importance:
+    auto_archive_threshold: 0.3   # このスコア未満の auto_summary をアーカイブ
+    auto_archive_after_days: 14   # 作成から最低 N 日経過したものが対象
+  context_limit: 5                # チャット・ブリーフィング時に注入する記憶件数上限
+
+# ---------------------------------------------------------------------------
+# Phase 4: STT / TTS / 音声常駐
+# ---------------------------------------------------------------------------
+
+stt:
+  enabled: false            # pip install -e '.[stt]' してから true に
+  provider: whisper         # whisper | mock
+  model: base               # tiny | base | small | medium | large
+  language: ja              # ja | auto
+  device: cpu               # cpu | cuda
+
+tts:
+  enabled: false            # pip install -e '.[voice]' してから true に
+  provider: mock            # voicevox | openai | mock
+  voicevox:
+    url: ${VOICEVOX_URL:-http://localhost:50021}
+    speaker_id: 1
+  openai:
+    voice: ${OPENAI_TTS_VOICE:-alloy}   # alloy | echo | fable | onyx | nova | shimmer
+    model: tts-1
+
+voice:
+  notification_speech: false  # リマインダー・ブリーフィングを音声読み上げするか
+  wakeword:
+    enabled: false            # ウェイクワード常駐を有効にするか (pip install -e '.[wakeword]' 必要)
+    keyword: hey_assistant    # openwakeword に渡すキーワード識別子
+    sensitivity: 0.5          # 検出感度 (0.0〜1.0)

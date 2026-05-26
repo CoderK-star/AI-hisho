@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.schemas.common import ReminderCreate
-from backend.core.workflow.internal.reminders import add_reminder, list_reminders
+from backend.core.workflow.internal.reminders import add_reminder, delete_reminder, list_reminders
 from backend.db.session import get_session
 
 router = APIRouter(prefix="/reminders", tags=["reminders"])
@@ -34,3 +34,13 @@ async def get_reminders(
     session: AsyncSession = Depends(get_session),
 ) -> list[dict]:
     return await list_reminders(session, include_fired=include_fired)
+
+
+@router.delete("/{reminder_id}", status_code=204)
+async def remove_reminder(
+    reminder_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    deleted = await delete_reminder(session, reminder_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Reminder not found")

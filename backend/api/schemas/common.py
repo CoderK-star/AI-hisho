@@ -41,5 +41,10 @@ class MemoCreate(BaseModel):
     content: str
 
 
+class MemoUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+
+
 class MemoryPinRequest(BaseModel):
     content: str

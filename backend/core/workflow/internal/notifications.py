@@ -5,7 +5,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-async def send_notification(message: str, method: str = "terminal") -> bool:
+async def send_notification(message: str, method: str = "terminal", speak: bool = False) -> bool:
+    """Send a notification via the specified method.
+
+    Args:
+        message: Notification text.
+        method: ``terminal`` | ``os`` | ``speech``.
+        speak: If True and method is not ``speech``, also speak the message
+               via TTS (requires ``voice.notification_speech: true`` in settings).
+    """
+    success = await _send(message, method)
+
+    if speak or _notification_speech_enabled():
+        await _speak_notification(message)
+
+    return success
+
+
+async def _send(message: str, method: str) -> bool:
     if method == "terminal":
         logger.info("[NOTIFICATION] %s", message)
         print(f"\n🔔 {message}\n")
@@ -17,10 +34,11 @@ async def send_notification(message: str, method: str = "terminal") -> bool:
             import sys
 
             if sys.platform == "win32":
+                safe_msg = message.replace('"', "'")
                 ps_cmd = (
-                    f'[System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") '
-                    f"| Out-Null; "
-                    f'[System.Windows.Forms.MessageBox]::Show("{message}", "AI秘書")'
+                    '[System.Reflection.Assembly]::LoadWithPartialName'
+                    '("System.Windows.Forms") | Out-Null; '
+                    f'[System.Windows.Forms.MessageBox]::Show("{safe_msg}", "AI秘書")'
                 )
                 subprocess.Popen(
                     ["powershell", "-Command", ps_cmd],
@@ -36,5 +54,27 @@ async def send_notification(message: str, method: str = "terminal") -> bool:
             print(f"\n🔔 {message}\n")
             return True
 
+    if method == "speech":
+        await _speak_notification(message)
+        return True
+
     logger.warning("Unknown notification method: %s", method)
     return False
+
+
+def _notification_speech_enabled() -> bool:
+    try:
+        from backend.config.loader import load_settings
+
+        return bool(load_settings().get("voice", {}).get("notification_speech", False))
+    except Exception:
+        return False
+
+
+async def _speak_notification(message: str) -> None:
+    try:
+        from backend.stt_tts.tts import get_tts_client
+
+        await get_tts_client().play(message)
+    except Exception:
+        logger.exception("TTS notification failed")

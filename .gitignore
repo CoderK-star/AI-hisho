@@ -4,6 +4,7 @@ __pycache__/
 .env.local
 data/db/*.db
 data/logs/*.jsonl
+data/rag/
 .venv/
 venv/
 dist/
@@ -11,6 +12,10 @@ dist/
 .ruff_cache/
 .pytest_cache/
 .coverage
+node_modules/
+.next/
+*.tsbuildinfo
+.claude/
 
 
 gui_requirements.md

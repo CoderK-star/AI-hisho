@@ -17,7 +17,14 @@ async def add_memo(
     session.add(memo)
     await session.commit()
     await session.refresh(memo)
-    return {"id": memo.id, "title": memo.title, "content": memo.content}
+    return {
+        "id": memo.id,
+        "title": memo.title,
+        "content": memo.content,
+        "is_pinned": memo.is_pinned,
+        "created_at": memo.created_at.isoformat() if memo.created_at else None,
+        "updated_at": memo.updated_at.isoformat() if memo.updated_at else None,
+    }
 
 
 async def list_memos(
@@ -30,9 +37,10 @@ async def list_memos(
         {
             "id": m.id,
             "title": m.title,
-            "content": m.content[:200],
+            "content": m.content,
             "is_pinned": m.is_pinned,
             "created_at": m.created_at.isoformat() if m.created_at else None,
+            "updated_at": m.updated_at.isoformat() if m.updated_at else None,
         }
         for m in rows
     ]
@@ -47,4 +55,29 @@ async def get_memo(session: AsyncSession, memo_id: str) -> dict[str, Any] | None
         "title": memo.title,
         "content": memo.content,
         "is_pinned": memo.is_pinned,
+        "created_at": memo.created_at.isoformat() if memo.created_at else None,
+        "updated_at": memo.updated_at.isoformat() if memo.updated_at else None,
+    }
+
+
+async def update_memo(
+    session: AsyncSession,
+    memo_id: str,
+    **updates: Any,
+) -> dict[str, Any] | None:
+    memo = await session.get(Memo, memo_id)
+    if not memo:
+        return None
+    for key, value in updates.items():
+        if hasattr(memo, key):
+            setattr(memo, key, value)
+    await session.commit()
+    await session.refresh(memo)
+    return {
+        "id": memo.id,
+        "title": memo.title,
+        "content": memo.content,
+        "is_pinned": memo.is_pinned,
+        "created_at": memo.created_at.isoformat() if memo.created_at else None,
+        "updated_at": memo.updated_at.isoformat() if memo.updated_at else None,
     }

@@ -18,10 +18,11 @@ class ContextData:
     tasks: list[dict[str, Any]] = field(default_factory=list)
     reminders: list[dict[str, Any]] = field(default_factory=list)
     memos: list[dict[str, Any]] = field(default_factory=list)
+    memories: list[dict[str, Any]] = field(default_factory=list)
 
 
 _INTENT_LOADERS: dict[IntentType, list[str]] = {
-    IntentType.CHAT: ["time", "conversations"],
+    IntentType.CHAT: ["time", "conversations", "memories"],
     IntentType.TASK_ADD: ["time", "tasks"],
     IntentType.TASK_LIST: ["time", "tasks"],
     IntentType.TASK_UPDATE: ["time", "tasks"],
@@ -30,7 +31,7 @@ _INTENT_LOADERS: dict[IntentType, list[str]] = {
     IntentType.MEMO_ADD: ["time"],
     IntentType.MEMO_LIST: ["time", "memos"],
     IntentType.SCHEDULE_CHECK: ["time", "tasks", "reminders"],
-    IntentType.BRIEFING: ["time", "tasks", "reminders", "memos"],
+    IntentType.BRIEFING: ["time", "tasks", "reminders", "memos", "memories"],
     IntentType.MEMORY_PIN: ["time"],
     IntentType.KNOWLEDGE_SEARCH: ["time", "conversations"],
     IntentType.SCHEDULE_CHECK_CALENDAR: ["time"],
@@ -83,5 +84,10 @@ async def load_context(
             {"id": m.id, "title": m.title, "content": m.content[:200]}
             for m in rows
         ]
+
+    if "memories" in loaders:
+        from backend.core.memory.engine import get_active_memories
+        # 重要度上位5件をコンテキストとして注入（アクセス追跡なし）
+        ctx.memories = await get_active_memories(session, limit=5, record_access=False)
 
     return ctx

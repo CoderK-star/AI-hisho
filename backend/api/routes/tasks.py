@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.api.schemas.common import TaskCreate, TaskUpdate
-from backend.core.workflow.internal.tasks import add_task, list_tasks, update_task
+from backend.core.workflow.internal.tasks import add_task, delete_task, list_tasks, update_task
 from backend.db.session import get_session
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
@@ -51,3 +51,13 @@ async def patch_task(
     if result is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return result
+
+
+@router.delete("/{task_id}", status_code=204)
+async def remove_task(
+    task_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    deleted = await delete_task(session, task_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Task not found")

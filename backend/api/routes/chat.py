@@ -119,6 +119,11 @@ def _build_system_prompt(ctx: ContextData, wf: WorkflowResult) -> str:
         parts.append(f"未完了タスク: {json.dumps(ctx.tasks, ensure_ascii=False)}")
     if ctx.reminders:
         parts.append(f"リマインダー: {json.dumps(ctx.reminders, ensure_ascii=False)}")
+    if ctx.memories:
+        mem_lines = ["重要な記憶（重要度順）:"]
+        for m in ctx.memories:
+            mem_lines.append(f"  [{m['source']}] {m['content'][:200]}")
+        parts.append("\n".join(mem_lines))
 
     # RAG 検索結果をコンテキストとして注入
     if _is_rag_result(wf) and wf.data:

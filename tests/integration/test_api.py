@@ -12,6 +12,12 @@ async def setup_db():
     await init_db()
 
 
+@pytest.fixture(autouse=True)
+def disable_rag(monkeypatch):
+    """統合テストでは RAG エンジンを無効化する（モデルDLが不要）。"""
+    monkeypatch.setattr("backend.rag.engine.RAGEngine.get_instance", lambda: None)
+
+
 @pytest.mark.asyncio
 async def test_health():
     transport = ASGITransport(app=app)

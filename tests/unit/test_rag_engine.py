@@ -1,4 +1,9 @@
-"""RAGエンジンのテスト。qdrant-client[fastembed] がインストールされていない場合はスキップ。"""
+"""RAGエンジンのテスト。
+
+スキップ条件:
+  - qdrant-client[fastembed] が未インストール
+  - HuggingFace へのネットワーク接続不可（モデルダウンロードが必要なため）
+"""
 from __future__ import annotations
 
 import pytest
@@ -13,6 +18,23 @@ except ImportError:
 pytestmark = pytest.mark.skipif(not _QDRANT_AVAILABLE, reason="qdrant-client not installed")
 
 
+def _require_network(func):
+    """ネットワーク接続が必要なテスト用デコレータ。接続失敗時はスキップする。"""
+    import functools
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            msg = str(e).lower()
+            if any(k in msg for k in ("ssl", "connect", "certificate", "network", "timeout")):
+                pytest.skip(f"Network/SSL unavailable: {e}")
+            raise
+
+    return wrapper
+
+
 @pytest.fixture
 def rag_engine(tmp_path, monkeypatch):
     from backend.rag.engine import RAGEngine
@@ -23,7 +45,7 @@ def rag_engine(tmp_path, monkeypatch):
         "mode": "local",
         "local_path": str(tmp_path / "rag"),
         "collection": "test_col",
-        "embedding_model": "intfloat/multilingual-e5-small",
+        "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         "top_k": 3,
     }
     engine = RAGEngine(cfg)
@@ -31,12 +53,14 @@ def rag_engine(tmp_path, monkeypatch):
 
 
 @pytest.mark.asyncio
+@_require_network
 async def test_initialize(rag_engine):
     await rag_engine.initialize()
     assert rag_engine._initialized
 
 
 @pytest.mark.asyncio
+@_require_network
 async def test_index_and_search(rag_engine):
     await rag_engine.initialize()
 
@@ -59,6 +83,7 @@ async def test_index_and_search(rag_engine):
 
 
 @pytest.mark.asyncio
+@_require_network
 async def test_delete_document(rag_engine):
     await rag_engine.initialize()
     await rag_engine.index_document("memo", "del-001", "削除するメモ")

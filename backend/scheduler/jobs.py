@@ -66,6 +66,22 @@ async def _reindex_rag() -> None:
     logger.info("RAG: 再インデックス完了 (%d件)", count)
 
 
+async def _maintain_memories() -> None:
+    """記憶エントリの夜間メンテナンス: スコア再計算 → 自動アーカイブ。"""
+    from backend.core.memory.pruner import prune_memories, recalculate_all_scores
+
+    async with async_session() as session:
+        updated = await recalculate_all_scores(session)
+        result = await prune_memories(session)
+
+    logger.info(
+        "Memory maintenance: scores_updated=%d archived=%d checked=%d",
+        updated,
+        result["archived"],
+        result["checked"],
+    )
+
+
 def check_reminders() -> None:
     _run_async(_check_reminders())
 
@@ -76,3 +92,7 @@ def run_briefing() -> None:
 
 def reindex_rag() -> None:
     _run_async(_reindex_rag())
+
+
+def maintain_memories() -> None:
+    _run_async(_maintain_memories())

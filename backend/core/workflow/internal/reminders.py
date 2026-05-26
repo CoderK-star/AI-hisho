@@ -46,7 +46,10 @@ async def list_reminders(
             "id": r.id,
             "message": r.message,
             "remind_at": r.remind_at.isoformat(),
-            "is_fired": r.is_fired,
+            "fired": r.is_fired,
+            "is_recurring": r.is_recurring,
+            "recurrence_rule": r.recurrence_rule,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
         }
         for r in rows
     ]
@@ -57,6 +60,15 @@ async def fire_reminder(session: AsyncSession, reminder_id: str) -> bool:
     if not reminder:
         return False
     reminder.is_fired = True
+    await session.commit()
+    return True
+
+
+async def delete_reminder(session: AsyncSession, reminder_id: str) -> bool:
+    reminder = await session.get(Reminder, reminder_id)
+    if not reminder:
+        return False
+    await session.delete(reminder)
     await session.commit()
     return True
 

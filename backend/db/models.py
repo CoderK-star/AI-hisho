@@ -82,4 +82,8 @@ class MemoryEntry(Base):
     )
     session_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Phase 3: 重要度スコアリング
+    importance_score: Mapped[float] = mapped_column(default=0.5)
+    access_count: Mapped[int] = mapped_column(default=0)
+    last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
