@@ -28,6 +28,17 @@ async def test_health():
 
 
 @pytest.mark.asyncio
+async def test_root_redirects_to_docs():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=False
+    ) as client:
+        resp = await client.get("/")
+        assert resp.status_code == 307
+        assert resp.headers["location"] == "/docs"
+
+
+@pytest.mark.asyncio
 async def test_create_and_list_tasks():
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

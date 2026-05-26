@@ -8,6 +8,7 @@ from pathlib import Path
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from backend.api.routes import calendar, chat, logs, memories, memos, reminders, search, tasks
 from backend.api.routes import voice as voice_routes
@@ -140,6 +141,11 @@ app.include_router(calendar.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
 app.include_router(memories.router, prefix="/api")
 app.include_router(voice_routes.router, prefix="/api")
+
+
+@app.get("/", include_in_schema=False)
+async def root() -> RedirectResponse:
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
